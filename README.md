@@ -79,6 +79,10 @@ To index the data in the local database, execute the script [prepare_database.py
 After indexing the local database, you can use the query interface to customize the system's functionality and query the
 data.
 #### Web tool
+No primeiro acesso configure as sessões do serviço com o script [manage.py](database/web/manage.py)
+```shell
+<path to SRADatabaseNavigator>/database/web/manage.py migrate
+```
 You can use the script [manage.py](database/web/manage.py) to start the local web server. On a local machine, run one of the following commands:
 ```shell
 # To run the web server only on a local machine, use the following command:
