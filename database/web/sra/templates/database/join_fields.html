@@ -1,0 +1,140 @@
+<h3 class="text-center">Join fields</h3>
+
+<label for="table">Select one table for join fields.</label>
+<select id="table" name="table" class="form-select" aria-label="Mining tables" onchange="getJoins()">
+  <option selected disabled value="">Please, select one table.</option>
+    {% for table in mining_tables %}
+    	<option value="{{ table.schema }}.{{ table.table }}">{{ table.name }}</option>
+    {% endfor %}
+{#    {% for table in tables %}#}
+{#    	<option value="{{ table.schema }}.{{ table.table }}">{{ table.name }}</option>#}
+{#    {% endfor %}#}
+</select>
+
+<div id="result_fields"></div>
+
+<script>
+    async function acceptField(table, field_a, field_b, table_row) {
+        showLoading();
+        try {
+            const response = await fetch(
+                "{% url 'add_table_join_fields' %}",
+                {
+                    method: 'POST',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf_token
+                    },
+                    body: JSON.stringify({
+                        table: table,
+                        fields: [field_a, field_b]
+                    })
+                }
+            );
+            if(response.ok && response.status === 200){
+                table_row.style.display = 'none';
+                showToast('Data saved successfully.', 'Success',);
+                // await getJoins();
+            } else {
+                showErrorToast(response.statusText, 'Error code: ' + response.status);
+            }
+        } catch (err) {
+            console.error(err);
+            showErrorToast('Server does not respond.');
+        }
+        hideLoading();
+    }
+    async function getJoins() {
+        showLoading();
+        let result_fields = document.getElementById('result_fields');
+        result_fields.innerHTML = '';
+        let error = false;
+        let table = document.getElementById('table');
+        if(table.value.length === 0) {
+            showErrorToast('Please, select a table.');
+            error = true;
+        }
+        if(!error) {
+            try {
+                const response = await fetch(
+                    "{% url 'get_possible_equals_columns' %}",
+                    {
+                        method: 'POST',
+                        cache: 'no-cache',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrf_token
+                        },
+                        body: JSON.stringify({
+                            table: table.value,
+                        })
+                    }
+                );
+                if(response.ok && response.status === 200){
+                    let data = await response.json();
+                    let result = '<table class="table table-striped">';
+                    result += '<thead>';
+                    result += '<th>Column a</th>';
+                    result += '<th>Column b</th>';
+                    result += '<th></th>';
+                    result += '<th></th>';
+                    result += '</thead>';
+                    result += '<tbody>';
+                    data.forEach((tables)=>{
+                        result += '<tr>';
+                        result += '<td>'+tables[0]+'</td>';
+                        result += '<td>'+tables[1]+'</td>';
+                        result += '<td>';
+                        result += '<button type="button" class="btn btn-secondary btn-sm" onclick="acceptField(\''+table.value+'\', \''+tables[0]+'\', \''+tables[1]+'\', this.parentElement.parentElement)">Accept</button>';
+                        result += '</td>';
+                        result += '<td>';
+                        result += '<button type="button" class="btn btn-secondary btn-sm" onclick="rejectField(\''+table.value+'\', \''+tables[0]+'\', \''+tables[1]+'\', this.parentElement.parentElement)">Reject</button>';
+                        result += '</td>';
+                        result += '</tr>';
+                    });
+                    result += '</tbody>';
+                    result += '</table>';
+                    result_fields.innerHTML = result;
+                } else {
+                    showErrorToast(response.statusText, 'Error code: ' + response.status);
+                }
+            } catch (err) {
+                console.error(err);
+                showErrorToast('Server does not respond.');
+            }
+        }
+        hideLoading();
+    }
+    async function rejectField(table, field_a, field_b, table_row) {
+        showLoading();
+        try {
+            const response = await fetch(
+                "{% url 'reject_table_join_fields' %}",
+                {
+                    method: 'POST',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf_token
+                    },
+                    body: JSON.stringify({
+                        table: table,
+                        fields: [field_a, field_b]
+                    })
+                }
+            );
+            if(response.ok && response.status === 200){
+                table_row.style.display = 'none';
+                showToast('Data saved successfully.', 'Success',);
+                // await getJoins();
+            } else {
+                showErrorToast(response.statusText, 'Error code: ' + response.status);
+            }
+        } catch (err) {
+            console.error(err);
+            showErrorToast('Server does not respond.');
+        }
+        hideLoading();
+    }
+</script>

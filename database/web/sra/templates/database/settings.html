@@ -1,0 +1,68 @@
+{% load humanize %}
+<h3 class="text-center">Settings</h3>
+
+<h5>Database: {{ database }}.</h5>
+<div class="accordion" id="accordionIgnoredData">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseIgnoredFields"
+                    aria-expanded="false" aria-controls="collapseIgnoredFields">
+                Ignored fields {% if ignored_fields|length %}
+                <span class="badge bg-secondary ms-2">{{ ignored_fields|length|intcomma }}</span>{% endif %}
+            </button>
+        </h2>
+        <div id="collapseIgnoredFields" class="accordion-collapse collapse" data-bs-parent="#accordionIgnoredData">
+            <div class="accordion-body">
+                <table class="table table-sm table-striped">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Schema</th>
+                        <th>Table</th>
+                        <th>Column</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for element in ignored_fields %}
+                        <tr>
+                            <td>{{ element.schema }}</td>
+                            <td>{{ element.table }}</td>
+                            <td>{{ element.column }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseIgnoredTables"
+                    aria-expanded="false" aria-controls="collapseIgnoredTables">
+                Ignored tables {% if ignored_tables|length %}
+                <span class="badge bg-secondary ms-2">{{ ignored_tables|length|intcomma }}</span>{% endif %}
+            </button>
+        </h2>
+        <div id="collapseIgnoredTables" class="accordion-collapse collapse" data-bs-parent="#accordionIgnoredData">
+            <div class="accordion-body">
+                <table class="table table-sm table-striped">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Schema</th>
+                        <th>Table</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for element in ignored_tables %}
+                        <tr>
+                            <td>{{ element.schema }}</td>
+                            <td>{{ element.table }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

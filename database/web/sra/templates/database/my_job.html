@@ -1,0 +1,26 @@
+<h3 class="text-center">My jobs</h3>
+
+{% if jobs %}
+	<table class="table">
+    <thead>
+    <tr>
+        <th>Job</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody class="table-striped">
+    {% for result_directory, job in jobs.items reversed %}
+    	<tr>
+        <td>{% if job.link %}<a target="_blank" rel="noreferrer noopener" href="{% url 'download_job' result_directory %}">{{result_directory}}</a>{%  else %}{{result_directory}}{% endif %}</td>
+        <td>{{ job.status }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+	<p class="text-center">No jobs found.</p>
+{% endif %}
+<script>
+{#window.setTimeout("loadScreen('my job')", 1000 * 60 * 3);#}
+</script>

@@ -1,0 +1,14 @@
+body {
+    margin-top: 70px;
+}
+
+main {
+    /*min-height: calc(100vh - 70px);*/
+}
+
+.load_bar {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

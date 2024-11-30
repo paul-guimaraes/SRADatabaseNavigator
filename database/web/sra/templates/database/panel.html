@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SRA database navigator</title>
+
+    {% load bootstrap5 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+
+    {% load static %}
+
+    <link rel="stylesheet" type="text/css" href="{% static 'database/aimarajs/css/Aimara.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'database/style.css' %}">
+
+    <link rel="icon" type="image/x-icon" href="{% static 'database/image/favicon.ico' %}">
+
+    <script>var aimarajs_path = "{% static 'database/aimarajs' %}";</script>
+    <script type="text/javascript" src="{% static 'database/aimarajs/lib/Aimara.js' %}"></script>
+</head>
+<body>
+<nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark" aria-label="Top nav bar">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="https://ib.minas.fiocruz.br" target="_blank" rel="noopener noreferrer">
+            <img src="{% static 'database/image/logo_ib.png' %}" alt="Logo" class="d-inline-block align-text-top"
+                 height="20">
+            SRA database navigator
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main_menu"
+                aria-controls="main_menu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-md-center" id="main_menu">
+            <ul class="navbar-nav">
+                {% for menu in menus %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadScreen('{{ menu }}', this)">{{ menu | title }}</a>
+                    </li>
+                {% endfor %}
+                <!--                <li class="nav-item">-->
+                <!--                    <a class="nav-link disabled" aria-disabled="true">Disabled</a>-->
+                <!--                </li>-->
+                <!--                <li class="nav-item dropdown">-->
+                <!--                    <a class="nav-link dropdown-toggle icon-link" href="#" data-bs-toggle="dropdown" aria-expanded="false">Settings</a>-->
+                <!--                    <ul class="dropdown-menu">-->
+                <!--                        <li><a class="dropdown-item" href="#">Action</a></li>-->
+                <!--                        <li><a class="dropdown-item" href="#">Another action</a></li>-->
+                <!--                        <li><a class="dropdown-item" href="#">Something else here</a></li>-->
+                <!--                    </ul>-->
+                <!--                </li>-->
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div id="defaultToast" class="toast position-fixed top-10 end-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+        <strong id="defaultToastTitle" class="me-auto"></strong>
+        <small id="defaultToastExtraMessage"></small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div id="defaultToastMessage" class="toast-body"></div>
+</div>
+
+<div id="errorToast" class="toast position-fixed top-10 end-0 bg-danger" role="alert" aria-live="assertive"
+     aria-atomic="true">
+    <div class="toast-header bg-danger">
+        <strong id="errorToastTitle" class="me-auto text-white"></strong>
+        <small id="errorToastExtraMessage" class="text-white"></small>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div id="errorToastMessage" class="toast-body text-white"></div>
+</div>
+
+<div id="successToast" class="toast position-fixed top-10 end-0 bg-success" role="alert" aria-live="assertive"
+     aria-atomic="true">
+    <div class="toast-header bg-success">
+        <strong id="successToastTitle" class="me-auto text-white"></strong>
+        <small id="successToastExtraMessage" class="text-white"></small>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div id="successToastMessage" class="toast-body text-white"></div>
+</div>
+
+<main id="loading_stage" class="container d-none">
+    <div class="load_bar">
+        <div class="text-center">
+            <div class="spinner-border" role="status"></div>
+            <div class="row">
+                <strong id="loading_stage_message">teste...</strong>
+            </div>
+        </div>
+    </div>
+</main>
+
+<main id="stage" class="container"></main>
+
+</body>
+{% csrf_token %}
+<script>
+    const csrf_token = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    async function loadScreen(screen, menu) {
+        showLoading();
+        try {
+            const response = await fetch(
+                "{% url 'load_screen' %}",
+                {
+                    method: 'POST',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf_token
+                    },
+                    body: JSON.stringify({screen: screen})
+                }
+            );
+
+            if (response.ok && response.status === 200) {
+                let stage = document.getElementById('stage');
+                stage.innerHTML = await response.text();
+
+                Array.from(stage.querySelectorAll("script")).forEach(oldScriptEl => {
+                    const newScriptEl = document.createElement("script");
+
+                    Array.from(oldScriptEl.attributes).forEach(attr => {
+                        newScriptEl.setAttribute(attr.name, attr.value)
+                    });
+
+                    const scriptText = document.createTextNode(oldScriptEl.innerHTML);
+                    newScriptEl.appendChild(scriptText);
+
+                    oldScriptEl.parentNode.replaceChild(newScriptEl, oldScriptEl);
+                });
+                for (let item of document.getElementsByClassName('nav-link active')) {
+                    item.classList.remove('active');
+                }
+                if(menu) {
+                    menu.classList.add("active");
+                }
+            } else {
+                stage.innerHTML = '';
+                showErrorToast(response.statusText, 'Error code: ' + response.status);
+            }
+        } catch (err) {
+            stage.innerHTML = '';
+            showErrorToast('Server does not respond.');
+        }
+        hideLoading();
+    }
+
+    function showLoading(message = 'Loading') {
+        if (message) {
+            if (message.endsWith('.')) {
+                message = message.slice(0, -1);
+            }
+        }
+
+        let loadingMessage = document.getElementById('loading_stage_message');
+        loadingMessage.innerHTML = message;
+
+        let loading = document.getElementById('loading_stage');
+        loading.classList.remove('d-none');
+
+        let stage = document.getElementById('stage');
+        stage.classList.add('d-none');
+    }
+
+    function hideLoading() {
+        let loadingMessage = document.getElementById('loading_stage_message');
+        loadingMessage.innerHTML = '';
+
+        let loading = document.getElementById('loading_stage');
+        loading.classList.add('d-none');
+
+        let stage = document.getElementById('stage');
+        stage.classList.remove('d-none');
+    }
+
+    function showToast(message, extraMessage, title = 'Message') {
+        const toastLive = document.getElementById('defaultToast');
+        const toastMessage = document.getElementById('defaultToastMessage');
+        const toastExtraMessage = document.getElementById('defaultToastExtraMessage');
+        const toastTitle = document.getElementById('defaultToastTitle');
+        if (toastLive) {
+            if (message) {
+                toastMessage.innerHTML = message;
+            } else {
+                toastMessage.innerHTML = '';
+            }
+            if (extraMessage) {
+                toastExtraMessage.innerHTML = extraMessage;
+            } else {
+                toastExtraMessage.innerHTML = '';
+            }
+            if (title) {
+                toastTitle.innerHTML = title;
+            } else {
+                toastTitle.innerHTML = '';
+            }
+            const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastLive)
+            toastBootstrap.show();
+        }
+    }
+
+    function showErrorToast(message, extraMessage) {
+        const toastLive = document.getElementById('errorToast');
+        const toastMessage = document.getElementById('errorToastMessage');
+        const toastExtraMessage = document.getElementById('errorToastExtraMessage');
+        const toastTitle = document.getElementById('errorToastTitle');
+        if (toastLive) {
+            if (message) {
+                toastMessage.innerHTML = message;
+            } else {
+                toastMessage.innerHTML = '';
+            }
+            if (extraMessage) {
+                toastExtraMessage.innerHTML = extraMessage;
+            } else {
+                toastExtraMessage.innerHTML = '';
+            }
+            toastTitle.innerHTML = 'An error occur.';
+            const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastLive)
+            toastBootstrap.show();
+        }
+    }
+
+    function showSuccessToast(message, extraMessage) {
+        const toastLive = document.getElementById('successToast');
+        const toastMessage = document.getElementById('successToastMessage');
+        const toastExtraMessage = document.getElementById('successToastExtraMessage');
+        const toastTitle = document.getElementById('successToastTitle');
+        if (toastLive) {
+            if (message) {
+                toastMessage.innerHTML = message;
+            } else {
+                toastMessage.innerHTML = '';
+            }
+            if (extraMessage) {
+                toastExtraMessage.innerHTML = extraMessage;
+            } else {
+                toastExtraMessage.innerHTML = '';
+            }
+            toastTitle.innerHTML = 'Success.';
+            const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastLive)
+            toastBootstrap.show();
+        }
+    }
+</script>
+</html>

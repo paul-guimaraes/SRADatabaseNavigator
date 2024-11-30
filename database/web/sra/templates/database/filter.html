@@ -1,0 +1,579 @@
+<h3 class="text-center">Filter</h3>
+
+<h5 class="">Table references</h5>
+<p>Right-click on the table name to add or remove filter.</p>
+
+<div class="alert alert-light" role="alert">
+    <h6>Selected target table</h6>
+    <div id="target_table"></div>
+</div>
+
+<div class="alert alert-light" role="alert">
+    <h6>Selected table filters <span id="table_filters_count" class="badge bg-secondary text-white">0</span></h6>
+    <div id="table_filters"></div>
+</div>
+
+<div class="alert alert-light" role="alert">
+    <a class="btn btn-sm bg-secondary text-white" href="#" onclick="addAllFields()">All fields</a>
+    <a class="btn btn-sm bg-secondary text-white" href="#" onclick="clearFilters()">Clear</a>
+{#    <a class="btn btn-sm bg-secondary text-white" href="#" onclick="searchData()">Search</a>#}
+    <a class="btn btn-sm bg-secondary text-white" href="#" onclick="getNetwork()">Get network</a>
+</div>
+
+<div id="network_canvas"></div>
+
+<div id="table_references_tree"></div>
+
+{% load static %}
+<script>
+    var miningTableColumnsElementsFilters = {};
+    var miningTableElementsFilters = {};
+    var tableColumnsElementsFilters = {};
+    var tableElementsFilters = {};
+    var targetTable = {};
+
+    function addAllFields() {
+        showLoading();
+        for (const [table, value] of Object.entries(getTables())) {
+            addTableFilter(table, value.name);
+        }
+        for(const[table, value] of Object.entries(getMiningTables())){
+            addMiningTableFilter(value.schema, table, table);
+            value.columns.forEach((column)=> {
+                addMiningTableColumnFilter(value.schema, table, column.name, table);
+            });
+        }
+        hideLoading();
+    }
+
+    function addMiningTableFilter(schema, table_id, table_name) {
+        if(!(schema in miningTableElementsFilters)) {
+            miningTableElementsFilters[schema] = {}
+        }
+        if(!(table_id in miningTableElementsFilters[schema])) {
+            miningTableElementsFilters[schema][table_id] = {
+                filter_name: `${schema}.${table_name}`,
+                table_name: table_name,
+            }
+            drawTableFilters();
+        }
+    }
+
+    function addMiningTableColumnFilter(schema, table_id, table_column, table_name) {
+        if(!(schema in miningTableColumnsElementsFilters)) {
+            miningTableColumnsElementsFilters[schema] = {};
+        }
+        if(!(table_id in miningTableColumnsElementsFilters[schema])) {
+            miningTableColumnsElementsFilters[schema][table_id] = {};
+        }
+        if(!(table_column in miningTableColumnsElementsFilters[schema][table_id])) {
+            miningTableColumnsElementsFilters[schema][table_id][table_column] = {
+                filter_name: `${schema}.${table_name}.${table_column}`,
+                table_name: table_name,
+            }
+            drawTableFilters();
+        }
+    }
+
+    function addTableFilter(table_id, table_name) {
+        if (!(table_id in tableElementsFilters)) {
+            tableElementsFilters[table_id] = table_name;
+            drawTableFilters();
+        }
+    }
+
+    function addTableColumnFilter(table_id, table_column, table_name) {
+        if(!(table_id in tableColumnsElementsFilters)) {
+            tableColumnsElementsFilters[table_id] = {};
+        }
+        if(!(table_column in tableColumnsElementsFilters[table_id])) {
+            tableColumnsElementsFilters[table_id][table_column] = {
+                filter_name: `${table_name}.${table_column}`,
+                table_name: table_name,
+            }
+            drawTableFilters();
+        }
+    }
+
+    function clearFilters() {
+        miningTableColumnsElementsFilters = {};
+        miningTableElementsFilters = {};
+        tableColumnsElementsFilters = {};
+        tableElementsFilters = {};
+        // targetTable = {};
+
+        // drawTargetTable();
+        drawTableFilters();
+    }
+
+    function drawTableFilters() {
+        let elements = [];
+        for(const [schema, tables] of Object.entries(miningTableElementsFilters)) {
+            for(const [table, values] of Object.entries(tables)) {
+                elements.push(`<a href="#" onclick="removeMiningTableFilter('${schema}', '${table}')"><span class="badge rounded-pill text-white bg-primary">${values.filter_name}</span></a>`);
+            }
+        }
+        for(const [schema, tables] of Object.entries(miningTableColumnsElementsFilters)) {
+            for(const [table, columns] of Object.entries(tables)) {
+                for(const [column, values] of Object.entries(columns)) {
+                    elements.push(`<a href="#" onclick="removeMiningTableColumnFilter('${schema}', '${table}', '${column}')"><span class="badge rounded-pill text-white bg-info">${values.filter_name}</span></a>`);
+                }
+            }
+        }
+        for(const [table, filter_name] of Object.entries(tableElementsFilters)) {
+            elements.push(`<a href="#" onclick="removeTableFilter('${table}')"><span class="badge rounded-pill text-white bg-success">${filter_name}</span></a>`);
+        }
+        for(const [table, columns] of Object.entries(tableColumnsElementsFilters)) {
+            for(const [column, values] of Object.entries(columns)) {
+                elements.push(`<a href="#" onclick="removeTableColumnFilter('${table}', '${column}')"><span class="badge rounded-pill text-white bg-warning">${values.filter_name}</span></a>`);
+            }
+        }
+        let htmlElement = document.getElementById('table_filters');
+        htmlElement.innerHTML = elements.join(' ');
+
+        htmlElement = document.getElementById('table_filters_count');
+        htmlElement.innerHTML = String(elements.length);
+    }
+
+    function drawTableReferencesTree() {
+        let columns = getColumns();
+        let miningTables = getMiningTables();
+        let tables = getTables();
+
+        let nodes = [];
+        for (const [table, value] of Object.entries(tables)) {
+            nodes[table] = {id: table, name: value.name, reference: value.reference, referenced_by: {}, total: value.total};
+        }
+        const hasGroupsToNest = (nodes) => {
+            for (const [table, value] of Object.entries(nodes)) {
+                if ('reference' in value) {
+                    if (value.reference in nodes) {
+                        nodes[value.reference]['referenced_by'][table] = nodes[table];
+                        delete nodes[table];
+                        return hasGroupsToNest(nodes);
+                    }
+                }
+            }
+            for (const [table, value] of Object.entries(nodes)) {
+                for (const [subTable, subValue] of Object.entries(value.referenced_by)) {
+                    for (const [table, value] of Object.entries(nodes)) {
+                        if (value.reference === subTable) {
+                            subValue.referenced_by[table] = nodes[table];
+                            delete nodes[table];
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        hasGroupsToNest(nodes);
+
+        let blueKeyIcon = '{% static "database/aimarajs/images/blue_key.png" %}';
+        let bullseyeIcon = '{% static "database/image/bullseye.svg" %}';
+        let folderIcon = '{% static "database/aimarajs/images/folder.png" %}';
+        let funnelIcon = '{% static "database/image/funnel.svg" %}';
+        let leafIcon = '{% static "database/aimarajs/images/leaf.png" %}';
+        let magicBallIcon = '{% static "database/aimarajs/images/magic_ball.png" %}'
+        let plusLgIcon = '{% static "database/image/plus-lg.svg" %}';
+        let starIcon = '{% static "database/aimarajs/images/star.png" %}';
+        let xIcon = '{% static "database/image/x.svg" %}';
+
+        let contextMenu = {
+            'column_menu': {
+                elements: [
+                    {
+                        text: 'Add filter',
+                        icon: funnelIcon,
+                        submenu: {
+                            elements: [
+                                {
+                                    text: 'Add',
+                                    icon: plusLgIcon,
+                                    action: function (node) {
+                                        addTableColumnFilter(node.table_id, node.table_column, node.table_name);
+                                    }
+                                },
+                                {
+                                    text: 'Remove',
+                                    icon: xIcon,
+                                    action: function (node) {
+                                        removeTableColumnFilter(node.table_id, node.table_column);
+                                    }
+                                },
+                            ]
+                        }
+                    },
+                ]
+            },
+            'mining_column_menu': {
+                elements: [
+                    {
+                        text: 'Add filter',
+                        icon: funnelIcon,
+                        submenu: {
+                            elements: [
+                                {
+                                    text: 'Add',
+                                    icon: plusLgIcon,
+                                    action: function (node) {
+                                        addMiningTableColumnFilter(node.schema, node.table_id, node.table_column, node.table_name);
+                                    }
+                                },
+                                {
+                                    text: 'Remove',
+                                    icon: xIcon,
+                                    action: function (node) {
+                                        removeMiningTableColumnFilter(node.schema, node.table_id, node.table_column);
+                                    }
+                                },
+                            ]
+                        }
+                    },
+                ]
+            },
+            'mining_table_menu': {
+                elements: [
+                    {
+                        text: 'Add filter',
+                        icon: funnelIcon,
+                        submenu: {
+                            elements: [
+                                {
+                                    text: 'Add',
+                                    icon: plusLgIcon,
+                                    action: function (node) {
+                                        addMiningTableFilter(node.schema, node.table_id, node.table_name);
+                                    }
+                                },
+                                {
+                                    text: 'Remove',
+                                    icon: xIcon,
+                                    action: function (node) {
+                                        removeMiningTableFilter(node.schema, node.table_id);
+                                    }
+                                },
+                            ]
+                        }
+                    },
+                ]
+            },
+            'table_menu': {
+                elements: [
+                    {
+                        text: 'Add filter',
+                        icon: funnelIcon,
+                        submenu: {
+                            elements: [
+                                {
+                                    text: 'Add',
+                                    icon: plusLgIcon,
+                                    action: function (node) {
+                                        addTableFilter(node.table_id, node.table_name);
+                                    }
+                                },
+                                {
+                                    text: 'Remove',
+                                    icon: xIcon,
+                                    action: function (node) {
+                                        removeTableFilter(node.table_id);
+                                    }
+                                },
+                            ]
+                        }
+                    },
+                    {
+                        text: 'Set as target',
+                        icon: bullseyeIcon,
+                        action: function (node) {
+                            drawTargetTable(node.table_id, node.table_name);
+                        }
+                    },
+                ]
+            },
+        };
+        let tree = createTree('table_references_tree', 'white', contextMenu);
+
+        let nodeIndex = {};
+        let rootNode = undefined;
+        const proccessNode = (nodes) => {
+            for (const [table, value] of Object.entries(nodes)) {
+                let formatedTotal = new Intl.NumberFormat('en').format(value.total);
+                if (Object.values(nodeIndex).length === 0) {
+                    if ('reference' in value) {
+                        rootNode = tree.createNode(`${value.reference}`, true, folderIcon, null, null, null);
+                        rootNode.table_name = value.reference;
+                        rootNode.table_id = value.reference;
+                        nodeIndex[value.reference] = rootNode;
+
+                        nodeIndex[table] = nodeIndex[value.reference].createChildNode(`${value.name} (${formatedTotal})`, false, starIcon, null, 'table_menu');
+                        nodeIndex[table].table_name = value.name;
+                        nodeIndex[table].table_id = table;
+                    } else {
+                        nodeIndex[table] = tree.createNode(`${value.name} (${formatedTotal})`, false, starIcon, null, 'table_menu');
+                        nodeIndex[table].table_name = value.name;
+                        nodeIndex[table].table_id = table;
+                    }
+                } else {
+                    let icon = null;
+                    if (nodeIndex[value.reference].parent.name === 'tree') {
+                        icon = starIcon;
+                    } else {
+                        icon = blueKeyIcon;
+                    }
+                    nodeIndex[table] = nodeIndex[value.reference].createChildNode(`${value.name} (${formatedTotal})`, false, icon, null, 'table_menu');
+                    nodeIndex[table].table_name = value.name;
+                    nodeIndex[table].table_id = table;
+                }
+                proccessNode(value.referenced_by);
+            }
+        }
+        proccessNode(nodes);
+
+        for(const[table, value] of Object.entries(columns)){
+            value.columns.forEach((column)=> {
+                let formatedTotal = new Intl.NumberFormat('en').format(column.total);
+                let columnNode = nodeIndex[table].createChildNode(`${column.name} <small>(${formatedTotal})</small>`, false, leafIcon, null, 'column_menu');
+                columnNode.table_name = value.name;
+                columnNode.table_id = table;
+                columnNode.table_column = column.name;
+            });
+        }
+
+        for(const[table, value] of Object.entries(miningTables)){
+            let miningNode = rootNode.createChildNode(`${table}`, false, magicBallIcon, null, 'mining_table_menu');
+            miningNode.schema = value.schema;
+            miningNode.table_id = table;
+            miningNode.table_name = table;
+            value.columns.forEach((column)=> {
+                let formatedTotal = new Intl.NumberFormat('en').format(column.total);
+                let columnNode = miningNode.createChildNode(`${column.name} <small>(${formatedTotal})</small>`, false, leafIcon, null, 'mining_column_menu');
+                columnNode.schema = value.schema;
+                columnNode.table_name = table;
+                columnNode.table_id = table;
+                columnNode.table_column = column.name;
+            });
+        }
+
+        tree.drawTree();
+    }
+
+    function drawTargetTable(table, table_name) {
+        targetTable = {};
+        if (table) {
+            targetTable[table] = table_name;
+        }
+        let htmlElement = document.getElementById('target_table');
+        if (Object.keys(targetTable).length > 0) {
+            htmlElement.innerHTML = `<a href="#" onclick=""><span class="badge rounded-pill text-white bg-danger">${table_name}</span></a>`;
+        } else {
+            htmlElement.innerHTML = '';
+        }
+    }
+
+    function getColumns() {
+        {% autoescape off %}
+            return {{ columns }};
+        {% endautoescape %}
+    }
+
+    function getMiningTables() {
+        {% autoescape off %}
+        return {{ mining_tables }};
+        {% endautoescape %}
+    }
+
+    function getTables() {
+        {% autoescape off %}
+        return {{ tables }};
+        {% endautoescape %}
+    }
+
+    function getSelectedFilters() {
+        let miningTables = {};
+        for(const[schema, tables] of Object.entries(miningTableElementsFilters)) {
+            miningTables[schema] = [];
+            for(const table of Object.keys(tables)) {
+                miningTables[schema].push(table);
+            }
+        }
+        let miningColumns = {};
+        for(const[schema, tables] of Object.entries(miningTableColumnsElementsFilters)) {
+            miningColumns[schema] = {};
+            for(const[table, columns] of Object.entries(tables)) {
+                miningColumns[schema][table] = [];
+                for(const column of Object.keys(columns)) {
+                    miningColumns[schema][table].push(column);
+                }
+            }
+        }
+        let tables = Object.keys(tableElementsFilters);
+        let columns = {};
+        for(const[table, values] of Object.entries(tableColumnsElementsFilters)) {
+            columns[table] = [];
+            for(const column of Object.keys(values)){
+                columns[table].push(column);
+            }
+        }
+        return {miningTables: miningTables, miningColumns: miningColumns, tables: tables, columns: columns}
+    }
+
+    async function getNetwork() {
+        showLoading();
+        let error = false;
+        if(Object.keys(targetTable).length === 0) {
+            showErrorToast('Please, select a target table.');
+            error = true;
+        }
+        if(!error) {
+            try {
+                let fields = getSelectedFilters()
+                const response = await fetch(
+                    "{% url 'get_network' %}",
+                    {
+                        method: 'POST',
+                        cache: 'no-cache',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrf_token
+                        },
+                        body: JSON.stringify({
+                            target_table: Object.keys(targetTable)[0],
+                            mining_tables: fields.miningTables,
+                            mining_columns: fields.miningColumns,
+                            tables: fields.tables,
+                            columns: fields.columns,
+                        })
+                    }
+                );
+                if(response.ok && response.status === 200){
+                    let data = await response.text();
+                    let params = [
+                        'height='+screen.height,
+                        'width='+screen.width,
+                        'fullscreen=yes' //Internet Explorer
+                    ].join(',');
+                    let htmlResponse = window.open("", "_blank", params);
+                    htmlResponse.document.write(data);
+                } else {
+                    showErrorToast(response.statusText, 'Error code: ' + response.status);
+                }
+            } catch (err) {
+                console.error(err);
+                showErrorToast('Server does not respond.');
+            }
+        }
+        hideLoading();
+    }
+
+    function removeMiningTableFilter(schema, table_id) {
+        if(schema in miningTableElementsFilters) {
+            if(table_id in miningTableElementsFilters[schema]) {
+                delete miningTableElementsFilters[schema][table_id];
+                if(Object.keys(miningTableElementsFilters[schema]).length === 0) {
+                    delete miningTableElementsFilters[schema];
+                }
+            }
+        }
+        drawTableFilters();
+    }
+
+    function removeMiningTableColumnFilter(schema, table_id, table_column) {
+        if(schema in miningTableColumnsElementsFilters) {
+            if(table_id in miningTableColumnsElementsFilters[schema]) {
+                if(table_column in miningTableColumnsElementsFilters[schema][table_id]) {
+                    delete miningTableColumnsElementsFilters[schema][table_id][table_column];
+                }
+                if(Object.keys(miningTableColumnsElementsFilters[schema][table_id]).length === 0) {
+                    delete miningTableColumnsElementsFilters[schema][table_id];
+                }
+            }
+            if(Object.keys(miningTableColumnsElementsFilters[schema]).length === 0) {
+                delete miningTableColumnsElementsFilters[schema];
+            }
+        }
+        drawTableFilters();
+    }
+
+    function removeTableFilter(table_id) {
+        if (table_id in tableElementsFilters) {
+            delete tableElementsFilters[table_id];
+        }
+        drawTableFilters();
+    }
+
+    function removeTableColumnFilter(table_id, table_column) {
+        if(table_id in tableColumnsElementsFilters) {
+            if(table_column in tableColumnsElementsFilters[table_id]) {
+                delete tableColumnsElementsFilters[table_id][table_column];
+            }
+            if(Object.keys(tableColumnsElementsFilters[table_id]).length === 0) {
+                delete tableColumnsElementsFilters[table_id]
+            }
+        }
+        drawTableFilters();
+    }
+
+    async function searchData() {
+        showLoading();
+        let error = false;
+        if(Object.keys(targetTable).length === 0) {
+            showErrorToast('Please, select a target table.');
+            error = true;
+        }
+        if(!error) {
+            try {
+                let fields = getSelectedFilters();
+                const response = await fetch(
+                    "{% url 'search_data' %}",
+                    {
+                        method: 'POST',
+                        cache: 'no-cache',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrf_token
+                        },
+                        body: JSON.stringify({
+                            target_table: Object.keys(targetTable)[0],
+                            mining_tables: fields.miningTables,
+                            mining_columns: fields.miningColumns,
+                            tables: fields.tables,
+                            columns: fields.columns,
+                        })
+                    }
+                );
+                if(response.ok && response.status === 200){
+                    let header = response.headers.get('Content-Disposition');
+                    let filename = undefined;
+                    header.split(';').forEach((value)=> {
+                        value = value.toLowerCase();
+                        if(value.includes('filename') && value.includes('=')) {
+                            filename = value.split('=')[1].replaceAll('"', '').replaceAll("'", '').trim();
+                        }
+                    });
+                    let blob = await response.blob();
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = url;
+                    if(filename) {
+                        a.download = filename;
+                    }
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    showErrorToast(response.statusText, 'Error code: ' + response.status);
+                }
+            } catch (err) {
+                console.error(err);
+                showErrorToast('Server does not respond.');
+            }
+        }
+        hideLoading();
+    }
+
+    // drawing elements.
+    drawTableReferencesTree();
+    // drawing default target table.
+    drawTargetTable('experiment_package_sample', 'experiment_package_sample');
+</script>

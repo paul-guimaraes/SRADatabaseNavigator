@@ -1,0 +1,7 @@
+; Config model for packages.
+[database]
+host=localhost
+port=5432
+user=my_power_user_name
+name=my_happy_database
+password=top_secret

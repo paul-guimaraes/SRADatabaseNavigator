@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graph Index</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <h1>Network</h1>
+
+    <div class="d-flex flex-column align-items-stretch flex-shrink-0 bg-body-tertiary" style="width: 380px;">
+        <a href="#"
+           class="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">
+            <span id="communities_container_count" class="fs-5 fw-semibold"></span>
+        </a>
+        <div id="communities_container" class="list-group list-group-flush border-bottom scrollarea"></div>
+    </div>
+
+    <div class="d-flex flex-column align-items-stretch flex-shrink-0 bg-body-tertiary" style="width: 380px;">
+        <a href="#"
+           class="d-flex align-items-center flex-shrink-0 p-3 link-body-emphasis text-decoration-none border-bottom">
+            <span id="communities_container_count" class="fs-5 fw-semibold"></span>
+        </a>
+        <div id="communities_container" class="list-group list-group-flush border-bottom scrollarea"></div>
+    </div>
+</div>
+</body>
+<script>
+    // {nodes_number: 10, edges_number: 15, description: 'descrição 1', link: '#'}
+    let network = :network:;
+    // {id: 1, nodes_number: 10, edges_number: 15, description: 'descrição 1', link: '#'}
+    let communites = [:communities:];
+
+    function generateNetwork() {
+        let items = '';
+
+        let linkNetwork = network.link.length > 0 && network.link !== '#'
+        if(linkNetwork) {
+            items += '<a href="' + network.link + '" target="_blank" rel="noreferrer noopener" class="list-group-item list-group-item-action py-3 lh-sm" aria-current="true">';
+        } else {
+            items += '<a href="#" class="list-group-item list-group-item-action py-3 lh-sm" aria-current="true">';
+        }
+        items += '<div class="d-flex w-100 align-items-center justify-content-between">'
+                + '<strong class="mb-1">Entire network</strong>'
+                + '</div>'
+                + '<div><small>Nodes: ' + network.nodes_number + ', edges: ' + network.edges_number + ', type connections: ' + network.type_connections + '</small></div>'
+                + '<div class="col-10 mb-1 small">' + network.description + '</div>'
+                + '</a>';
+
+
+        communites.forEach((community) => {
+            items += '<a href="' + community.link + '" target="_blank" rel="noreferrer noopener" class="list-group-item list-group-item-action py-3 lh-sm" aria-current="true">'
+                + '<div class="d-flex w-100 align-items-center justify-content-between">'
+                + '<strong class="mb-1">Community ' + community.id + '</strong>'
+                + '</div>'
+                + '<div><small>Nodes: ' + community.nodes_number + ', edges: ' + community.edges_number + ', type connections: ' + community.type_connections + '</small></div>'
+                + '<div class="col-10 mb-1 small">' + community.description + '</div>'
+                + '</a>';
+        });
+
+        let communities_container = document.getElementById('communities_container');
+        communities_container.innerHTML = items;
+
+        let communities_container_count = document.getElementById('communities_container_count');
+        communities_container_count.innerHTML = 'Communities: ' + communites.length;
+    }
+
+    generateNetwork();
+</script>
+</html>
