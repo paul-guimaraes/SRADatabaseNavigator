@@ -1,0 +1,20 @@
+# >= python3.10
+Django
+SQLAlchemy
+django-bootstrap-v5
+kmodes
+kneed
+lxml
+matplotlib
+networkx
+nltk
+numpy
+openpyxl
+pandas
+progressbar2
+psycopg2-binary
+pyvis
+requests
+scikit-learn
+scipy
+venn
