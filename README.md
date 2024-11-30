@@ -74,7 +74,7 @@ prepare_database.py
 After indexing the local database, you can use the query interface to customize the system's functionality and query the
 data.
 #### Web tool
-You can use the script manage.py[manage.py](database/web/manage.py) to start the local web server. On a local machine, run one of the following commands:
+You can use the script [manage.py](database/web/manage.py) to start the local web server. On a local machine, run one of the following commands:
 ```shell
 # To run the web server only on a local machine, use the following command:
 manage.py runserver
