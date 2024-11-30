@@ -86,5 +86,7 @@ if __name__ == "__main__":
     database.create_consolidated_mesh_terms_table()
     logging.info('Criando consolidado de tabelas especiais...')
     database.create_special_consolidate_sample()
+    logging.info('Preparando tabelas de exceções...')
+    database.create_ignored_fields_tables()
 
     logging.info('Processo finalizado.')

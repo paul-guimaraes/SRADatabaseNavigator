@@ -34,6 +34,11 @@ pip install -r requirements.txt
 It is common for both Python versions 2 and 3 to coexist on many systems. If version 3 is not the default version on 
 your system, replace the commands 'python' and 'pip' with 'python3' and 'pip3', respectively.
 
+All the processes below are executed using the full path to the location where the SRADatabaseNavigator were installed.
+If frequent execution is required, you may add the database directory to the PATH in your environment variables.
+Please refer to your operating system's documentation for instructions on how to perform this operation. By doing so, 
+you will be able to execute all scripts by simply typing their names in the terminal. For example: `sra.py --help`.
+
 ## 🚀 Usage
 The execution of this package involves three main steps: downloading the data from the SRA, indexing the data, and
 constructing feature networks of the samples.
@@ -44,17 +49,17 @@ To construct the database, you can execute the command "sra.py --database <datab
 ```shell
 # Use NCBI Entrez standard.
 # Querying NCBI SRA and store data into local database. 
-sra.py --database my_happy_database --query '(acute lymphoblastic leukemia) AND "Mus musculus"[orgn:__txid10090]'
+<path to SRADatabaseNavigator>/database/sra.py --database my_happy_database --password --query '(acute lymphoblastic leukemia) AND "Mus musculus"[orgn:__txid10090]'
 # Querying NCBI SRA and store data into database in another machine.
-sra.py --host <server address> --port <server port> --user <server user> --database <server database name> --query <Entrez SRA query>
+<path to SRADatabaseNavigator>/database/sra.py --host <server address> --port <server port> --user <server user> --database <server database name> --password --query <Entrez SRA query>
 ```
 Consult the documentation using the --help option.
 ```shell
 # Visualizando opções de comando no script. 
-sra.py --help
+<path to SRADatabaseNavigator>/database/sra.py --help
 ```
 ### 🔍 Data indexing
-Create a configuration file named "config.ini" with the database connection details. An example file is available at
+Create a configuration file into [database](database) directory named "config.ini" with the database connection details. An example file is available at
 [config.ini.example](database/config.ini.example).
 ```ini
 ; Config model for packages.
@@ -68,7 +73,7 @@ password=top_secret
 
 To index the data in the local database, execute the script [prepare_database.py](database/prepare_database.py).
 ```shell
-prepare_database.py
+<path to SRADatabaseNavigator>/database/prepare_database.py
 ```
 ### Network process
 After indexing the local database, you can use the query interface to customize the system's functionality and query the
@@ -77,17 +82,22 @@ data.
 You can use the script [manage.py](database/web/manage.py) to start the local web server. On a local machine, run one of the following commands:
 ```shell
 # To run the web server only on a local machine, use the following command:
-manage.py runserver
+<path to SRADatabaseNavigator>/database/web/manage.py runserver
 
 # To run the web server on a specific address, use the following command:
-manage.py runserver <address>:<port>
+<path to SRADatabaseNavigator>/database/web/manage.py runserver <address>:<port>
 
 # To run the web server into all local network, use the following command:
-manage.py runserver 0.0.0.0:<port>
+<path to SRADatabaseNavigator>/database/web/manage.py runserver 0.0.0.0:<port>
 ```
-Caso deseje disponibilizar a ferramenta vai acesso servidor web, você pode fazê-lo utilizando servidores web como o
-[Apache HTTP Server](https://httpd.apache.org/). Para configurar integrar a ferramenta web em seu servidor apache,
-você pode incluir as diretivas abaixo. Consulte as documentações do Apache HTTP e do [Django Framework](https://www.djangoproject.com/).
+
+[!WARNING]
+Never use the manage.py script directly to serve the application, as this may expose security vulnerabilities on your system.
+Instead, use programs such as [Apache HTTP Server](https://httpd.apache.org/) ou outro de sua preferência.
+
+Should you wish to make the tool available via web access, you can do so using web servers such as Apache HTTP Server.
+To configure and integrate the web tool into your Apache server, you may include the directives below. 
+Please refer to the documentation of [Apache HTTP Server](https://httpd.apache.org/) and the [Django Framework](https://www.djangoproject.com/) for further details.
 ```
 WSGIScriptAlias / /path/to/mysite.com/mysite/wsgi.py
 WSGIPythonHome /path/to/venv
@@ -137,5 +147,5 @@ If you need to customize the construction of the network, hide labels, use paral
 performance improvements in the network construction process, you can use the script [network.py](database/network.py).
 Please, consult the `--help` option to see all the parameters.
 ```shell
-network.py --input /tmp/teste/jobs/input_graph.csv --work_directory /tmp/rede/
+<path to SRADatabaseNavigator>/database/network.py --input /tmp/teste/jobs/input_graph.csv --work_directory /tmp/rede/
 ```

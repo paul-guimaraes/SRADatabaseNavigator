@@ -506,6 +506,62 @@ class Database:
                     chunksize=self.__chunk_size,
                 )
 
+    def create_ignored_fields_tables(self):
+        with self.__connection.cursor() as cursor:
+            temporary_table_name = 'temp_ignored_field'
+            cursor.execute(
+                f"""create temporary table if not exists {temporary_table_name} (
+                      schema_name text not null,
+                      table_name text not null,
+                      field text not null
+                    );
+                """
+            )
+            with open(path.join(path.dirname(path.realpath(__file__)), 'template', 'ignored_field')) as ignored_file:
+                for line in ignored_file:
+                    _, schema, table, field = [str(i.strip()) for i in line.split(',')]
+                    cursor.execute(f"""
+                    insert into {temporary_table_name}(schema_name, table_name, field) values(%s, %s, %s)
+                    """, (schema, table, field))
+                cursor.execute(f"""
+                insert into {self.__schema}.ignored_field(schema_name, table_name, field)
+                select tt.schema_name, tt.table_name, tt.field
+                from {temporary_table_name} tt
+                left join {self.__schema}.ignored_field i
+                    on tt.schema_name = i.schema_name
+                    and tt.table_name = i.table_name
+                    and tt.field = i.field
+                where i.schema_name is null and i.table_name is null and i.field is null
+                group by tt.schema_name, tt.table_name, tt.field
+                """)
+                self.__connection.commit()
+            temporary_table_name = 'temp_ignored_table'
+            cursor.execute(
+                f"""create table if not exists {temporary_table_name}
+                    (
+                        schema_name text not null,
+                        table_name  text not null
+                    );
+                """
+            )
+            with open(path.join(path.dirname(path.realpath(__file__)), 'template', 'ignored_table')) as ignored_file:
+                for line in ignored_file:
+                    _, schema, table = [str(i.strip()) for i in line.split(',')]
+                    cursor.execute(f"""
+                    insert into {temporary_table_name}(schema_name, table_name) values(%s, %s)
+                    """, (schema, table))
+                cursor.execute(f"""
+                insert into {self.__schema}.ignored_table(schema_name, table_name)
+                select tt.schema_name, tt.table_name
+                from {temporary_table_name} tt
+                left join {self.__schema}.ignored_table i
+                    on tt.schema_name = i.schema_name
+                    and tt.table_name = i.table_name
+                where i.schema_name is null and i.table_name is null
+                group by tt.schema_name, tt.table_name
+                """)
+                self.__connection.commit()
+
     # TODO: incluir tabelas e colunas proibidas como filtro antes de processar os registros
     def create_sample_mining_terms_table(self):
         """Create database consolidated sample mining terms table."""
