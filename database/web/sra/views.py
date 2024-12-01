@@ -632,11 +632,12 @@ def load_screen(request):
         columns = temp
         del temp
         # removing prohibited tables
-        for table in ignored_tables['public']:
-            if table in columns:
-                columns[table]['columns'] = []
-            if table in other_columns:
-                columns[table]['columns'] = []
+        if 'public' in ignored_tables:
+            for table in ignored_tables['public']:
+                if table in columns:
+                    columns[table]['columns'] = []
+                if table in other_columns:
+                    columns[table]['columns'] = []
         for schema in ignored_fields:
             for table in ignored_fields[schema]:
                 join_fields = database.get_table_join_fields(schema=schema, table=table)
