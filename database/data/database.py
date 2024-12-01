@@ -2190,7 +2190,7 @@ class Database:
                 query += " where "
             else:
                 query += " or "
-            query += f'("{column}" is not null and trim("{column}") != \'\')'
+            query += f'("{column}" is not null and trim(cast("{column}" as text)) != \'\')'
         with self.__connection.cursor() as cursor:
             cursor.execute(query)
             return dict(zip([i[0] for i in cursor.description], cursor.fetchone()))
