@@ -145,7 +145,7 @@ The result is a set of files containing an index file (index.html) to be opened 
 construct the network ("input_graph.csv"), as well as accessory data in CSV and JSON formats. The "query.json" file 
 contains the details of the search performed and the time spent on execution.
 
-<br><img alt="SRA Navigator filter result 3" src="readme_files/sra_navigator_filter_result_3.png" width="500"><br/>
+<br><img alt="SRA Navigator filter result 3" src="readme_files/sra_navigator_filter_result_3.png" width="500"><img alt="SRA Navigator filter result 4" src="readme_files/sra_navigator_filter_result_4.png" width="500"><br/>
 
 If you need to customize the construction of the network, hide labels, use parallel processing, or even achieve 
 performance improvements in the network construction process, you can use the script [network.py](database/network.py).
@@ -153,3 +153,5 @@ Please, consult the `--help` option to see all the parameters.
 ```shell
 <path to SRADatabaseNavigator>/database/network.py --input /tmp/teste/jobs/input_graph.csv --work_directory /tmp/rede/
 ```
+
+[//]: # (##### Extracting elements from the results)
