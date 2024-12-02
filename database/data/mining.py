@@ -30,39 +30,44 @@ import logging
 
 
 class Mining:
+    # atributo para garantir que os corpus só serão checados na primeira instância.
+    downloaded_corpus = False
+
     def __init__(self):
-        # verifying necessary libraries.
-        with Parallel(n_jobs=-1, backend='loky') as parallel:
-            Library = namedtuple('Library', 'path name')
-            libraries = [
-                Library('chunkers/maxent_ne_chunker', 'maxent_ne_chunker'),
-                Library('corpora/omw-1.4', 'omw-1.4'),
-                Library('corpora/stopwords', 'stopwords'),
-                Library('corpora/wordnet', 'wordnet'),
-                Library('corpora/words', 'words'),
-                Library('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),
-                Library('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
+        if Mining.downloaded_corpus is False:
+            # verifying necessary libraries.
+            with Parallel(n_jobs=-1, backend='loky') as parallel:
+                Library = namedtuple('Library', 'path name')
+                libraries = [
+                    Library('chunkers/maxent_ne_chunker', 'maxent_ne_chunker'),
+                    Library('corpora/omw-1.4', 'omw-1.4'),
+                    Library('corpora/stopwords', 'stopwords'),
+                    Library('corpora/wordnet', 'wordnet'),
+                    Library('corpora/words', 'words'),
+                    Library('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),
+                    Library('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
 
-                Library('tokenizers/punkt', 'punkt'),
-            ]
-            temp_version = nltk.__version__.split('.')
-            if len(temp_version) > 2:
-                temp_version = temp_version[:2]
-            temp_version = '.'.join(temp_version)
-            temp_version = float(temp_version)
-            if temp_version >= 3.6:
-                libraries.append(
-                    Library('tokenizers/punkt_tab', 'punkt_tab'),
-                )
+                    Library('tokenizers/punkt', 'punkt'),
+                ]
+                temp_version = nltk.__version__.split('.')
+                if len(temp_version) > 2:
+                    temp_version = temp_version[:2]
+                temp_version = '.'.join(temp_version)
+                temp_version = float(temp_version)
+                if temp_version >= 3.6:
+                    libraries.append(
+                        Library('tokenizers/punkt_tab', 'punkt_tab'),
+                    )
 
-            def check_download(library):
-                try:
-                    data.find(library.path)
-                except LookupError:
-                    download(library.name)
+                def check_download(library):
+                    try:
+                        data.find(library.path)
+                    except LookupError:
+                        download(library.name)
 
-            logging.info('Checking NLTK libraries...')
-            results = parallel(delayed(check_download)(library) for library in libraries)
+                logging.info('Checking NLTK libraries...')
+                results = parallel(delayed(check_download)(library) for library in libraries)
+                Mining.downloaded_corpus = True
 
         logging.info('Loading NLTK models...')
         self.cache = {}
