@@ -154,4 +154,5 @@ Please, consult the `--help` option to see all the parameters.
 <path to SRADatabaseNavigator>/database/network.py --input /tmp/teste/jobs/input_graph.csv --work_directory /tmp/rede/
 ```
 
+[//]: # (TODO: implementar)
 [//]: # (##### Extracting elements from the results)

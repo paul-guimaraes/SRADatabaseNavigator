@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import pickle
 from argparse import ArgumentParser
 from datetime import datetime
 from os import makedirs
@@ -80,6 +81,9 @@ if __name__ == '__main__':
     # escrevendo subredes/comunidades
     communities_javascript_objects = []
     for i, result in enumerate(results['communities']):
+        if isinstance(result, str):
+            with open(result, 'rb') as tf:
+                result = pickle.load(tf)
         nodes_number = str(result['info']['nodes_number'])
         edges_number = str(result['info']['edges_number'])
 
@@ -106,6 +110,9 @@ if __name__ == '__main__':
         edges_number = 0
         type_connections_number = 0
         for i, result in enumerate(results['communities']):
+            if isinstance(result, str):
+                with open(result, 'rb') as tf:
+                    result = pickle.load(tf)
             nodes_number += result['info']['nodes_number']
             edges_number += result['info']['edges_number']
             type_connections_number += len(result['info']['labels'])
@@ -119,6 +126,9 @@ if __name__ == '__main__':
         )
     else:
         result = results['network']
+        if isinstance(result, str):
+            with open(result, 'rb') as tf:
+                result = pickle.load(tf)
 
         nodes_number = str(result['info']['nodes_number'])
         edges_number = str(result['info']['edges_number'])

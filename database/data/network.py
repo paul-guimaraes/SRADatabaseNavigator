@@ -22,6 +22,7 @@ class Network:
         self.__nodes_index = None
         self.__columns_index = None
         self.__temp_directory = temp_directory
+        self.__temp_files = []
 
     def calculate_edges(self, edges, communities):
         edges_all = edges
@@ -58,6 +59,10 @@ class Network:
         self.set_status('Distributing data by community.')
 
         def __get_communities(_community, _edges, _labels_all, _weights_all):
+            if isinstance(_community, str):
+                _temp_file = _community
+                with open(_temp_file, 'rb') as _community:
+                    _community = pickle.load(_community)
             _edges_communities = []
             _labels_communities = []
             _weights_communities = []
@@ -441,13 +446,13 @@ class Network:
         self.set_status('Processing network data.')
         if self.__debug:
             bar.print('Calculando combinações...')
-        with NamedTemporaryFile(mode='w+', delete=True, dir=self.__temp_directory) as temp_file:
+        with NamedTemporaryFile(mode='w+', delete=True, dir=self.__temp_directory) as temp_file_network:
             for a, b in get_combinations([i for i in data.keys()]):
                 if self.__nodes_index is not None:
                     a = str(a)
                     b = str(b)
-                temp_file.write(' '.join([a, b]))
-                temp_file.write('\n')
+                temp_file_network.write(' '.join([a, b]))
+                temp_file_network.write('\n')
                 if self.__debug:
                     bar.update(bar.value + 1)
             if self.__debug:
@@ -456,8 +461,8 @@ class Network:
                 bar = ProgressBar(maxval=comb(len(data), 2))
                 bar.print('Calculando arestas...')
                 bar.update(0)
-            temp_file.seek(0)
-            for row in temp_file:
+            temp_file_network.seek(0)
+            for row in temp_file_network:
                 a, b = row.strip().split(' ')
                 if self.__nodes_index is not None:
                     a = int(a)
@@ -489,21 +494,26 @@ class Network:
         for i in range(0, communities_count):
             if self.__debug:
                 self.set_status(f'Computing network community {i + 1} of {communities_count}...')
-            network_communities.append(self.get_network(
+            temp_network = self.get_network(
                 edges=edges_communities[i],
                 labels=labels_communities[i],
                 weights=weights_communities[i],
                 edges_width_factor=edges_width_factor,
                 show_labels=show_labels,
                 suffix=i
-            ))
+            )
+            temp_file_network = NamedTemporaryFile(delete=True, dir=self.__temp_directory)
+            self.__temp_files.append(temp_file_network)
+            with open(temp_file_network.name, 'wb') as tf:
+                pickle.dump(temp_network, tf)
+            network_communities.append(temp_file_network.name)
 
         if self.__debug:
             self.set_status(f'Computing entire network...')
 
         results = dict(communities=network_communities)
         if generate_entire_network:
-            results['network'] = self.get_network(
+            temp_network = self.get_network(
                 edges=edges_all,
                 labels=labels_all,
                 weights=weights_all,
@@ -511,6 +521,11 @@ class Network:
                 show_labels=show_labels,
                 suffix='all'
             )
+            temp_file_network = NamedTemporaryFile(delete=True, dir=self.__temp_directory)
+            self.__temp_files.append(temp_file_network)
+            with open(temp_file_network.name, 'wb') as tf:
+                pickle.dump(temp_network, tf)
+            results['network'] = temp_file_network.name
 
         return results
 
@@ -545,14 +560,19 @@ class Network:
         for i in range(0, communities_count):
             if self.__debug:
                 self.set_status(f'Computing network community {i + 1} of {communities_count}...')
-            network_communities.append(self.get_network(
+            temp_result = self.get_network(
                 edges=edges_communities[i],
                 labels=labels_communities[i],
                 weights=weights_communities[i],
                 edges_width_factor=edges_width_factor,
                 show_labels=show_labels,
                 suffix=i
-            ))
+            )
+            temp_file_network = NamedTemporaryFile(delete=True, dir=self.__temp_directory)
+            self.__temp_files.append(temp_file_network)
+            with open(temp_file_network.name, 'wb') as tf:
+                pickle.dump(temp_result, tf)
+            network_communities.append(temp_file_network.name)
 
         if self.__debug:
             self.set_status(f'Computing entire network...')
@@ -568,7 +588,11 @@ class Network:
                 show_labels=show_labels,
                 suffix='all'
             )
-            results['network'] = network_all
+            temp_file_network = NamedTemporaryFile(delete=True, dir=self.__temp_directory)
+            self.__temp_files.append(temp_file_network)
+            with open(temp_file_network.name, 'wb') as tf:
+                pickle.dump(network_all, tf)
+            results['network'] = temp_file_network.name
 
         return results
 

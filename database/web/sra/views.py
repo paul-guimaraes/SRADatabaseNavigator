@@ -1,4 +1,5 @@
 import logging
+import pickle
 from configparser import RawConfigParser
 from datetime import datetime
 from django.conf import settings
@@ -487,6 +488,9 @@ def get_network(request):
     # escrevendo subredes/comunidades
     communities_javascript_objects = []
     for i, result in enumerate(results['communities']):
+        if isinstance(result, str):
+            with open(result, 'rb') as tf:
+                result = pickle.load(tf)
         nodes_number = str(result['info']['nodes_number'])
         edges_number = str(result['info']['edges_number'])
         type_connections = str(len(result['info']['labels']))
@@ -503,7 +507,7 @@ def get_network(request):
             + ", nodes_number: " + nodes_number
             + ", edges_number: " + edges_number
             + ", type_connections: " + type_connections
-            + ", description: 'labels " + ', '.join([str(label) for label in result['info']['labels']])
+            + ", description: 'labels " + ', '.join([str(label).replace("'", "\\'") for label in result['info']['labels']])
             + "', link: '" + html_file_name
             + "'}"
         )
@@ -519,6 +523,9 @@ def get_network(request):
         edges_number = 0
         type_connections_number = 0
         for i, result in enumerate(results['communities']):
+            if isinstance(result, str):
+                with open(result, 'rb') as tf:
+                    result = pickle.load(tf)
             nodes_number += result['info']['nodes_number']
             edges_number += result['info']['edges_number']
             type_connections_number += len(result['info']['labels'])
@@ -539,6 +546,9 @@ def get_network(request):
         )
     else:
         result = results['network']
+        if isinstance(result, str):
+            with open(result, 'rb') as tf:
+                result = pickle.load(tf)
 
         result_summary['network'] = {
             'nodes': result['info']['nodes_number'],
