@@ -153,6 +153,13 @@ Please, consult the `--help` option to see all the parameters.
 ```shell
 <path to SRADatabaseNavigator>/database/network.py --input /tmp/teste/jobs/input_graph.csv --work_directory /tmp/rede/
 ```
-
-[//]: # (TODO: implementar)
-[//]: # (##### Extracting elements from the results)
+##### Extracting elements from the results
+Given the nature of the search, analyzing or extracting data from networks can be a complex task. To assist with these 
+analyses, we provide the check_community.py[check_community.py](database/check_community.py) script. The script processes
+the data from each network, generates summaries, and extracts features to be analyzed in a combined manner.
+To use it, copy the networks generated in CSV format (typically the files named "network_community_%d.csv" with the 
+header "label, node_a, node_b, weight") into a directory and execute the command.
+```shell
+# Gerando resumo e extraíndo detalhes sobre arestas e nós da rede.
+<path to SRADatabaseNavigator>/database/check_community.py --input_directory <path to network csv files> --output_directory <path to output directory> --summarize --extract_fields
+```
