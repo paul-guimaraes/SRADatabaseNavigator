@@ -163,7 +163,21 @@ header "label, node_a, node_b, weight") into a directory and execute the command
 ```shell
 # Gerando resumo e extraíndo detalhes sobre arestas e nós da rede.
 <path to SRADatabaseNavigator>/database/check_community.py --input_directory <path to network csv files> --output_directory <path to output directory> --summarize --extract_fields
-
-# Focusing on edge details and seeking combinations.
-<path to SRADatabaseNavigator>/database/check_community_by_csv.py --input <path to network terms.csv file created by check_community.py script> --output <path to output directory>
 ```
+For each community, the script check_community.py[check_community.py](database/check_community.py) will generate a 
+summary containing the ID, the number of nodes, the number of connections, attributes, and values that constitute the edges.
+
+Additionally, a directory will be created with the name of each community, containing lists of attribute names, edge 
+labels, terms (features), and values found per sample, as well as the edge weights in the network, sorted from lowest 
+to highest. The weight is a dynamic value calculated based on the edge and associated with the number of features that 
+form the edge. The smaller the weight, the fewer the number of features the edge represents.
+
+````shell
+# Focusing on edge details and seeking combinations.
+<path to SRADatabaseNavigator>/database/check_community_by_csv_terms.py --input <path to network terms.csv file created by check_community.py script> --output <path to output directory>
+````
+The script [check_community_by_csv_terms.py](database/check_community_by_csv_terms.py) uses the term.csv file generated
+by the [check_community.py](database/check_community.py) script. After retrieving the terms, the script performs a 
+series of combination tests, starting with pairs (2 by 2) and increasing up to n by n, with n representing the maximum
+number of elements that can be grouped together. For each combination, a CSV file is generated displaying the details of
+the grouping. When possible, a Venn diagram is included.
