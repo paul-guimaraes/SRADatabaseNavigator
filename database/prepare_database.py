@@ -74,6 +74,9 @@ if __name__ == "__main__":
     ):
         del items[column]
 
+    logging.info('Preparando tabelas de exceções...')
+    database.create_ignored_fields_tables()
+
     logging.info('Procurando sinônimos em campos tag/value...')
     results = database.get_counts_data(fields=[{'tag': 'value'}], cache=True)
     database.get_counts_file(results=results, output_dir=output_diretory)
@@ -86,7 +89,5 @@ if __name__ == "__main__":
     database.create_consolidated_mesh_terms_table()
     logging.info('Criando consolidado de tabelas especiais...')
     database.create_special_consolidate_sample()
-    logging.info('Preparando tabelas de exceções...')
-    database.create_ignored_fields_tables()
 
     logging.info('Processo finalizado.')
