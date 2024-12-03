@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from argparse import ArgumentParser
 from data.util import NONE_VALUES
 from os import makedirs

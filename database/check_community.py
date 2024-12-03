@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from data.util import NONE_VALUES
 
 
