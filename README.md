@@ -181,3 +181,31 @@ by the [check_community.py](database/check_community.py) script. After retrievin
 series of combination tests, starting with pairs (2 by 2) and increasing up to n by n, with n representing the maximum
 number of elements that can be grouped together. For each combination, a CSV file is generated displaying the details of
 the grouping. When possible, a Venn diagram is included.
+
+###### Static plots
+To display the results, we adapted the [Pyvis](https://pypi.org/project/pyvis/) library to visualize the networks 
+dynamically. However, networks composed of many elements may place a heavy load on the computer during the visualization
+process. For this reason, we provide the [plot_networkx.py](database/plot_networkx.py) script, which generates static 
+figures with a lower computational cost using the [NetworkX](https://networkx.org/) library.
+
+```shell
+<path to SRADatabaseNavigator>/plot_networkx.py --input <path to csv network like 'network_community_0.csv'> --output <output directory>
+```
+
+##### Filtering networks by edge weights
+The networks can be filtered based on the edge weights. To perform this procedure, you can use the 
+[network.py](database/network.py) script in combination with some commands in a Linux shell environment.
+```shell
+# Storing the file name in the variable FILE_NAME.
+FILE_NAME='network_community_0.csv'
+NAME_WITHOUT_ENTENSION=$(basename -s .csv $FILE_NAME)
+
+# Extracting edge weights from the network with quantities.
+sed 's/\r//g' $FILE_NAME | rev | cut -f1 -d',' | rev | sort | uniq -c > weights.txt
+
+# Generating a filtered file with all the weights detected in the file weights.txt.
+for i in $(grep -v 'weight' weights.txt | rev | cut -f1 -d' ' | rev); do head -1 ${FILE_NAME} | sed 's/\r//g' > ${NAME_WITHOUT_ENTENSION}_filtered_${i}.csv; sed 's/\r//g' ${FILE_NAME} | grep ${i}'$' >> ${NAME_WITHOUT_ENTENSION}_filtered_${i}.csv; done
+
+# Building a network for each filtered file generated.
+for file in $(ls *filtered*csv | sort -r); do echo Workin on ${file}...; time <path to SRADatabaseNavigator>/database/network.py --debug --thread --is_graph_file --prefix network_ --work_directory ${NAME_WITHOUT_ENTENSION} --input $file; done
+```
