@@ -220,3 +220,6 @@ for i in $(grep -v 'weight' weights.txt | rev | cut -f1 -d' ' | rev); do head -1
 # Building a network for each filtered file generated.
 for file in $(ls *filtered*csv | sort -r); do echo Workin on ${file}...; time <path to SRADatabaseNavigator>/database/network.py --debug --thread --is_graph_file --prefix network_ --work_directory $(basename -s .csv $file) --input $file; done
 ```
+
+## Citation
+Guimarães, P.A.S., Carvalho, M.G.R. & Ruiz, J.C. A computational framework for extracting biological insights from SRA cancer data. Sci Rep 15, 8117 (2025). https://doi.org/10.1038/s41598-025-91781-8
