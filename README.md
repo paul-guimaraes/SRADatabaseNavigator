@@ -200,7 +200,7 @@ process. For this reason, we provide the [plot_networkx.py](database/plot_networ
 figures with a lower computational cost using the [NetworkX](https://networkx.org/) library.
 
 ```shell
-<path to SRADatabaseNavigator>/plot_networkx.py --input <path to csv network like 'network_community_0.csv'> --output <output directory>
+<path to SRADatabaseNavigator>/database/plot_networkx.py --input <path to csv network like 'network_community_0.csv'> --output <output directory>
 ```
 
 ##### Filtering networks by edge weights
